@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include "calculator.h"
+#include <iomanip>
 
 static bool parse_trade_line(const std::string& line, Trade& trade) {
     if (line.empty()) {
@@ -49,9 +50,27 @@ int main(int argc, char** argv) {
         std::cerr << "Second argument must be 'fifo' or 'lifo'\n";
         return 1;
     }
+    std::ifstream file(path); // open a file stream to the file at path for reading
+    if (!file) {
+        std::cerr << "Failed to open: " << path << "\n";
+        return 1;
+    }
     // Print header
     std::cout << "TIMESTAMP,SYMBOL,PNL\n";
 
     PNLCalculator calculator(mode);
+    std::string line;
+    while (std::getline(file, line)) {
+        Trade t;
+        if (!parse_trade_line(line, t)) {
+            continue;
+        }
+        double pnl = calculator.process(t);
+        if (std::abs(pnl) > 0) {
+            std::cout << t.timestamp << ','
+                      << t.symbol << ','
+                      << std::fixed << std::setprecision(2) << pnl << '\n';
+        }
+    }
     return 0;
 }
